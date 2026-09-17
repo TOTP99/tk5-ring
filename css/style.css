@@ -406,6 +406,23 @@ canvas{width:100%!important;height:100%!important;display:block;min-height:100px
 .bat-ind .bat-digit{
   font-size:20px;font-weight:800;font-family:var(--num-font);
   font-variant-numeric:tabular-nums;
+  color:var(--gold);
+  transition:color .2s;
+}
+.bat-ind .bat-digit.bat-due{
+  color:var(--red)!important;
+}
+.bat-ind #batWarn{
+  display:inline-block;margin-left:2px;font-size:14px;
+  opacity:.3;filter:grayscale(1);transition:opacity .2s,filter .2s;
+}
+.bat-ind #batWarn.active{
+  opacity:1;filter:none;
+  animation:bat-glow 1s ease-in-out infinite;
+}
+@keyframes bat-glow{
+  0%,100%{filter:drop-shadow(0 0 2px rgba(239,68,68,.9)) drop-shadow(0 0 4px rgba(239,68,68,.7))}
+  50%{filter:drop-shadow(0 0 10px rgba(239,68,68,1)) drop-shadow(0 0 20px rgba(239,68,68,1))}
 }
 
 /* Decorative paw prints (static) */
@@ -436,4 +453,3 @@ canvas{width:100%!important;height:100%!important;display:block;min-height:100px
   background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.35);
   box-shadow:none;
 }
-
