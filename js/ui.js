@@ -83,17 +83,21 @@ function setStepsBadge(steps) {
   if (el) el.textContent = evalSteps(+steps || 0);
 }
 
-/* ---- Battery-since-charge indicator ---- */
+/* ---- Battery-since-charge indicator ----
+   🔋 321 🚨 — "321" is bold yellow by default. Tapping 🔋 resets the
+   clock. Every 24h that passes since the last tap, one more digit
+   turns red, right to left through the sequence 3 → 2 → 1: after 24h
+   "3" turns red, after 48h "2" also turns red, after 72h "1" also
+   turns red. After 96h (all three digits red) 🚨 lights up with a
+   pulsing glow to signal the ring needs charging. */
 function updateBatteryUI() {
   const days = daysSinceCharge();
-  const c3 = $("bat3"), c2 = $("bat2"), c1 = $("bat1"), warn = $("batWarn"), icon = $("batIcon");
+  const c3 = $("bat3"), c2 = $("bat2"), c1 = $("bat1"), warn = $("batWarn");
   if (!c3) return;
-  const full = "#d4af37";
-  c3.style.color = days >= 1 ? "#ef4444" : full;
-  c2.style.color = days >= 2 ? "#ffd166" : full;
-  c1.style.color = days >= 3 ? "#95e1d3" : full;
-  if (warn) warn.textContent = days >= 4 ? "⚠️" : "";
-  if (icon) icon.style.filter = days >= 4 ? "grayscale(0.4)" : "";
+  c3.classList.toggle("bat-due", days >= 1);
+  c2.classList.toggle("bat-due", days >= 2);
+  c1.classList.toggle("bat-due", days >= 3);
+  if (warn) warn.classList.toggle("active", days >= 4);
 }
 function initBatteryTap() {
   const batIconEl = $("batIcon");
