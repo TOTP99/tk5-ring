@@ -129,6 +129,9 @@ button.glow{border-color:var(--accent)!important}
 .grid3 .m .l{font-size:10px}
 .grid3 .m .v{font-size:22px;margin:2px 0}
 .grid3 .m .u{font-size:10px}
+.grid3 #card-steps .l{padding-right:30px}
+.grid3 #card-temp .l{padding-right:30px}
+.grid3 .mini-refresh{width:22px;height:22px;top:8px;right:8px;font-size:12px}
 .grid3 .metric-dot{width:8px;height:8px}
 .grid3 .action-cell{display:flex;flex-direction:column;gap:8px;justify-content:center;cursor:default}
 .grid3 .action-cell:active{transform:none}
