@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0b0d">
+<meta name="theme-color" content="#0b0d10">
 <title>TK5 Smart Ring</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -12,131 +12,126 @@
 <canvas id="seasonCanvas"></canvas>
 <audio id="audioUnlock" preload="auto" playsinline style="display:none"
   src="data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YSADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"></audio>
-<span class="paw-deco paw1">🐾</span>
-<span class="paw-deco paw2">🐾</span>
-<span class="paw-deco paw3">🐾</span>
 
 <main>
 <div id="page1">
-  <!-- Hero / Connect -->
-  <div class="hero">
-    <div class="hero-title">
-      <img class="avatar" src="avatar.webp" width="44" height="44" alt="TK5" draggable="false">
-      <div class="hero-title-text">
-        <h1><span class="brand-tk5">TK5</span> <span class="brand-ring">Smart Ring</span></h1>
-        <span class="tag">TP🐈💍</span><button id="btnSeasonToggle" class="season-toggle" title="Tap to turn off the falling effect">🌸</button>
+  <!-- Slim header -->
+  <div class="topbar">
+    <div class="brand"><span class="brand-tk5">TK5</span> <span class="brand-ring">Smart Ring</span> <span class="device-tag">52F5</span></div>
+    <span id="batInd" class="bat-pill" title="Ring battery"><span id="batReal">--</span></span>
+    <label class="pwr-sw" title="Connect / Disconnect" aria-label="Power switch">
+      <input type="checkbox" id="btnPower">
+      <span class="pwr-track"><span class="pwr-knob"></span></span>
+    </label>
+    <button id="btnSeasonToggle" class="fx-toggle" title="Toggle ambient effects">Effects</button>
+  </div>
+  <div class="connect-row">
+    <div id="status" class="status disconnected">
+      <div class="status-dot"></div>
+      <div class="status-text">
+        <div class="status-line1" id="statusL1">Disconnected</div>
+        <div class="status-line2" id="statusL2">Tap the switch to connect</div>
       </div>
-    </div>
-    <div class="connect-row">
-      <div id="status" class="status disconnected">
-        <div class="status-dot"></div>
-        <div class="status-text">
-          <div class="status-line1" id="statusL1">Disconnected</div>
-          <div class="status-line2" id="statusL2">Tap the switch to connect</div>
-        </div>
-      </div>
-      <label class="pwr-sw" title="Connect / Disconnect" aria-label="Power switch">
-        <input type="checkbox" id="btnPower">
-        <span class="pwr-track"><span class="pwr-knob"></span></span>
-      </label>
     </div>
   </div>
+  <!-- Slim clock strip -->
+  <div class="clock-strip" id="card-clock" title="Tap to refresh weather">
+    <span class="clock-date" id="clockDate"><span class="clock-month">---</span> <span class="clock-dayyear">--, ----</span></span>
+    <span class="clock-week" id="clockWeek">---</span>
+    <span class="clock-time" id="clockTime">--:--:--</span>
+    <span class="clock-weather" id="clockWeather" aria-live="polite"><span id="wxText">--</span></span>
+  </div>
 
-  <!-- Main metrics -->
-  <div class="grid" style="margin-bottom:12px">
-    <div class="m cat-pink shape-rhythmic" id="card-hr">
-      <span class="status-emoji" id="hrEmoji"></span>
-      <div class="l">❤️ Heart Rate</div>
+  <!-- Compact metrics: 3 per row -->
+  <div class="grid3">
+    <div class="m" id="card-hr">
+      <span class="metric-dot" id="hrEmoji"></span>
+      <div class="l">Heart Rate</div>
       <div id="hr" class="v">--</div>
       <div class="u">BPM</div>
       <div class="m-progress" id="prog-hr"></div>
     </div>
-    <div class="m cat-cool shape-rhythmic" id="card-spo2">
-      <span class="status-emoji" id="spo2Emoji"></span>
-      <div class="l">🩸 SpO₂</div>
+    <div class="m" id="card-spo2">
+      <span class="metric-dot" id="spo2Emoji"></span>
+      <div class="l">SpO2</div>
       <div id="spo2" class="v">--</div>
       <div class="u">%</div>
       <div class="m-progress" id="prog-spo2"></div>
     </div>
-    <div class="m cat-warm shape-discrete" id="card-bp">
-      <span class="status-emoji" id="bpEmoji"></span>
-      <div class="l">🩺 Blood Pressure</div>
+    <div class="m" id="card-bp">
+      <span class="metric-dot" id="bpEmoji"></span>
+      <div class="l">Blood Pressure</div>
       <div id="bp" class="v">-- / --</div>
-      <div class="u" id="bpHr"></div>
+      <div class="u" id="bpHr">mmHg</div>
       <div class="m-progress" id="prog-bp"></div>
     </div>
-    <div class="m cat-lavender shape-rhythmic" id="card-hrv">
-      <span class="status-emoji" id="hrvEmoji"></span>
-      <div class="l">📈 HRV</div>
+    <div class="m" id="card-hrv">
+      <span class="metric-dot" id="hrvEmoji"></span>
+      <div class="l">HRV</div>
       <div id="hrv" class="v">--</div>
-      <div class="u"></div>
+      <div class="u">ms</div>
       <div class="m-progress" id="prog-hrv"></div>
     </div>
-    <div class="m cat-gold shape-discrete" id="card-steps">
-      <button id="btnSteps" class="mini-refresh">🔄</button>
-      <div class="l">👣 Steps</div>
-      <div id="steps" class="v">-- <span id="stepsBadge" class="steps-badge"></span></div>
+    <div class="m" id="card-pressure">
+      <span class="metric-dot" id="pressureEmoji"></span>
+      <div class="l">Stress</div>
+      <div id="pressureVal" class="v">--</div>
+      <div class="u">Latest</div>
+      <div class="m-progress" id="prog-pressure"></div>
+    </div>
+    <div class="m" id="card-temp">
+      <span class="metric-dot" id="tempEmoji"></span>
+      <div class="l">Temperature</div>
+      <div id="tempVal" class="v">--</div>
+      <div class="u">°C</div>
+    </div>
+    <div class="m" id="card-steps">
+      <button id="btnSteps" class="mini-refresh" title="Refresh steps">&#8635;</button>
+      <div class="l">Steps</div>
+      <div id="steps" class="v">--</div>
       <div class="u">Today</div>
     </div>
-    <div class="m cat-lavender shape-rhythmic" id="card-sleep">
-      <div class="sleep-emojis">
-        <span id="sleepQualityEmoji"></span>
-        <span id="sleepDurationEmoji"></span>
-      </div>
-      <div class="l">😴 Sleep</div>
+    <div class="m" id="card-sleep">
+      <span class="sleep-dots">
+        <span class="metric-dot sm" id="sleepQualityEmoji" title="Deep sleep share"></span>
+        <span class="metric-dot sm" id="sleepDurationEmoji" title="Duration"></span>
+      </span>
+      <div class="l">Sleep</div>
       <div id="sleepMin" class="v">--</div>
       <div class="u">Duration</div>
     </div>
-    <div class="pressure-col">
-      <div class="m pressure-mini cat-warm shape-discrete" id="card-pressure">
-        <span class="status-emoji" id="pressureEmoji"></span>
-        <div class="l">🎭 Stress</div>
-        <div id="pressureVal" class="v">--</div>
-        <div class="u">Latest</div>
-        <div class="m-progress" id="prog-pressure"></div>
-      </div>
-      <div class="row pressure-btns">
-        <button id="btnControl" class="c">🎛️ Control</button>
-        <button id="btnData" class="c">📋 Data</button>
-      </div>
-    </div>
-    <div class="m clock-card" id="card-clock" title="Tap to refresh weather">
-      <div class="clock-date" id="clockDate"><span class="clock-month">---</span> <span class="clock-dayyear">--, ----</span></div>
-      <div class="clock-divider"></div>
-      <div class="clock-week" id="clockWeek">---</div>
-      <div class="clock-time" id="clockTime">--:--:--</div>
-      <div class="clock-weather" id="clockWeather" aria-live="polite">
-        <span class="wx-icon" id="wxIcon">…</span>
-        <span class="wx-temp" id="wxTemp">--</span><span class="wx-unit">°C</span>
-      </div>
-    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="row action-row">
+    <button id="btnControl" class="c">Measure</button>
+    <button id="btnData" class="c">History</button>
   </div>
 
   <!-- Control panel -->
   <div id="panel-control" style="display:none">
     <div class="card">
-      <div class="panel-title">🐱 Measurement</div>
+      <div class="panel-title">Measurement</div>
       <div class="row">
         <button class="c" data-mode="0">HR</button>
-        <button class="c" data-mode="2">SpO₂</button>
+        <button class="c" data-mode="2">SpO2</button>
         <button class="c" data-mode="1">BP</button>
         <button class="c" data-mode="10">HRV</button>
         <button class="c" data-mode="3">Stress</button>
-        <button data-mode="-1">⏹ Stop</button>
+        <button data-mode="-1">Stop</button>
       </div>
-      <div class="row" style="margin-top:10px">
+      <div class="panel-title" style="margin-top:14px">Sync history</div>
+      <div class="row">
         <button data-h="09">Sync all</button>
-        <button data-h="08">BP ⌛️</button>
-        <button data-h="06">HR ⌛️</button>
-        <button data-h="04">Sleep ⌛️</button>
-        <span id="batInd" class="bat-ind" title="Tap 🔋 to reset battery estimate">
-          <span id="batIcon">🔋</span><span id="bat3" class="bat-digit">3</span><span id="bat2" class="bat-digit">2</span><span id="bat1" class="bat-digit">1</span><span id="batWarn">🚨</span>
-        </span>
+        <button data-h="08">BP</button>
+        <button data-h="06">HR</button>
+        <button data-h="04">Sleep</button>
       </div>
       <div class="row" style="margin-top:8px">
-        <button data-h="02">Steps ⌛️</button>
-        <button data-h="1a">SpO₂ ⌛️</button>
-        <button data-h="33">Stress ⌛️</button>
+        <button data-h="02">Steps</button>
+        <button data-h="1a">SpO2</button>
+        <button data-h="33">Stress</button>
+        <button data-h="1e">Temp</button>
       </div>
     </div>
   </div>
@@ -144,10 +139,11 @@
   <!-- Data panel -->
   <div id="panel-data" style="display:none">
     <div class="card">
-      <div class="panel-title">📜 ⌛️</div>
+      <div class="panel-title">History</div>
       <div id="history" class="hist"></div>
     </div>
     <div class="card">
+      <div class="panel-title">Log</div>
       <div class="row">
         <button id="btnCopy">Copy log</button>
         <button id="btnClearLog">Clear log</button>
@@ -161,8 +157,8 @@
 <!-- Detail pages -->
 <div id="pageHR" style="display:none">
   <div class="card">
-    <div class="row"><button class="hp-back" data-back>‹ Back</button></div>
-    <div class="chart-title"><span>❤️ HR Trend</span><span id="chart-sub">No data</span></div>
+    <div class="row"><button class="hp-back" data-back>&#8249; Back</button></div>
+    <div class="chart-title"><span>Heart Rate</span><span id="chart-sub">No data</span></div>
     <div class="range-tabs" id="trend-range">
       <button data-range="day">Day</button>
       <button data-range="week" class="active">Week</button>
@@ -170,18 +166,18 @@
       <button data-range="year">Year</button>
     </div>
     <div class="chart-box"><canvas id="trendCanvas"></canvas></div>
-    <div style="display:flex;justify-content:space-around;margin-top:12px;text-align:center">
-      <div><div style="font-size:22px;font-weight:800" id="hr-avg">--</div><div style="font-size:11px;color:var(--muted)">Avg</div></div>
-      <div><div style="font-size:22px;font-weight:800;color:#0d9488" id="hr-high">--</div><div style="font-size:11px;color:var(--muted)">Max</div></div>
-      <div><div style="font-size:22px;font-weight:800;color:#d4af37" id="hr-low">--</div><div style="font-size:11px;color:var(--muted)">Min</div></div>
+    <div class="stat-grid">
+      <div><div class="sv" id="hr-avg">--</div><div class="sl">Avg</div></div>
+      <div><div class="sv" id="hr-high">--</div><div class="sl">Max</div></div>
+      <div><div class="sv" id="hr-low">--</div><div class="sl">Min</div></div>
     </div>
   </div>
 </div>
 
 <div id="pageSpO2" style="display:none">
   <div class="card">
-    <div class="row"><button class="hp-back" data-back>‹ Back</button></div>
-    <div class="chart-title"><span>🩸 SpO₂ Trend</span><span id="spo2-chart-sub">No data</span></div>
+    <div class="row"><button class="hp-back" data-back>&#8249; Back</button></div>
+    <div class="chart-title"><span>SpO2</span><span id="spo2-chart-sub">No data</span></div>
     <div class="range-tabs" id="spo2-range">
       <button data-range="day">Day</button>
       <button data-range="week" class="active">Week</button>
@@ -189,18 +185,18 @@
       <button data-range="year">Year</button>
     </div>
     <div class="chart-box"><canvas id="spo2Canvas"></canvas></div>
-    <div style="display:flex;justify-content:space-around;margin-top:12px;text-align:center">
-      <div><div style="font-size:22px;font-weight:800" id="spo2-avg">--</div><div style="font-size:11px;color:var(--muted)">Avg</div></div>
-      <div><div style="font-size:22px;font-weight:800;color:#0d9488" id="spo2-high">--</div><div style="font-size:11px;color:var(--muted)">Max</div></div>
-      <div><div style="font-size:22px;font-weight:800;color:#d4af37" id="spo2-low">--</div><div style="font-size:11px;color:var(--muted)">Min</div></div>
+    <div class="stat-grid">
+      <div><div class="sv" id="spo2-avg">--</div><div class="sl">Avg</div></div>
+      <div><div class="sv" id="spo2-high">--</div><div class="sl">Max</div></div>
+      <div><div class="sv" id="spo2-low">--</div><div class="sl">Min</div></div>
     </div>
   </div>
 </div>
 
 <div id="pageHRV" style="display:none">
   <div class="card">
-    <div class="row"><button class="hp-back" data-back>‹ Back</button></div>
-    <div class="chart-title"><span>📈 HRV Trend</span><span id="hrv-chart-sub">No data</span></div>
+    <div class="row"><button class="hp-back" data-back>&#8249; Back</button></div>
+    <div class="chart-title"><span>HRV</span><span id="hrv-chart-sub">No data</span></div>
     <div class="range-tabs" id="hrv-range">
       <button data-range="day">Day</button>
       <button data-range="week" class="active">Week</button>
@@ -208,18 +204,18 @@
       <button data-range="year">Year</button>
     </div>
     <div class="chart-box"><canvas id="hrvCanvas"></canvas></div>
-    <div style="display:flex;justify-content:space-around;margin-top:12px;text-align:center">
-      <div><div style="font-size:22px;font-weight:800" id="hrv-avg">--</div><div style="font-size:11px;color:var(--muted)">Avg</div></div>
-      <div><div style="font-size:22px;font-weight:800;color:#0d9488" id="hrv-high">--</div><div style="font-size:11px;color:var(--muted)">Max</div></div>
-      <div><div style="font-size:22px;font-weight:800;color:#d4af37" id="hrv-low">--</div><div style="font-size:11px;color:var(--muted)">Min</div></div>
+    <div class="stat-grid">
+      <div><div class="sv" id="hrv-avg">--</div><div class="sl">Avg</div></div>
+      <div><div class="sv" id="hrv-high">--</div><div class="sl">Max</div></div>
+      <div><div class="sv" id="hrv-low">--</div><div class="sl">Min</div></div>
     </div>
   </div>
 </div>
 
 <div id="pageBP" style="display:none">
   <div class="card">
-    <div class="row"><button class="hp-back" data-back>‹ Back</button></div>
-    <div class="chart-title"><span>🩺 BP Trend</span><span id="bp-chart-sub">No data</span></div>
+    <div class="row"><button class="hp-back" data-back>&#8249; Back</button></div>
+    <div class="chart-title"><span>Blood Pressure</span><span id="bp-chart-sub">No data</span></div>
     <div class="range-tabs" id="bp-range">
       <button data-range="day" class="active">Day</button>
       <button data-range="week">Week</button>
@@ -228,43 +224,43 @@
     </div>
     <div class="chart-box"><canvas id="bpCanvas"></canvas></div>
     <div style="display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--muted)">
-      <span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d4af37;margin-right:4px"></i>Systolic</span>
-      <span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#95e1d3;margin-right:4px"></i>Diastolic</span>
+      <span><i class="legend-dot" style="background:#d8b56b"></i>Systolic</span>
+      <span><i class="legend-dot" style="background:#8fb8a8"></i>Diastolic</span>
     </div>
-    <div style="display:flex;justify-content:space-around;margin-top:12px;text-align:center">
-      <div><div style="font-size:22px;font-weight:800" id="bp-avg">--</div><div style="font-size:11px;color:var(--muted)">Avg</div></div>
-      <div><div style="font-size:22px;font-weight:800;color:#0d9488" id="bp-high">--</div><div style="font-size:11px;color:var(--muted)">Max</div></div>
-      <div><div style="font-size:22px;font-weight:800;color:#d4af37" id="bp-low">--</div><div style="font-size:11px;color:var(--muted)">Min</div></div>
+    <div class="stat-grid">
+      <div><div class="sv" id="bp-avg">--</div><div class="sl">Avg</div></div>
+      <div><div class="sv" id="bp-high">--</div><div class="sl">Max</div></div>
+      <div><div class="sv" id="bp-low">--</div><div class="sl">Min</div></div>
     </div>
   </div>
 </div>
 
 <div id="pageSleep" style="display:none">
   <div class="card">
-    <div class="row"><button class="hp-back" data-back>‹ Back</button></div>
-    <div class="chart-title"><span>😴 Sleep Stages</span><span id="hypnoDateLabel" style="color:#d4af37">--</span></div>
-    <div class="row" id="hypnoDateNav" style="justify-content:center;align-items:center;gap:16px;margin:8px 0">
-      <button id="hypnoDatePrev" class="c" style="padding:4px 14px">‹</button>
-      <span style="font-size:12px;color:var(--muted)">Change date</span>
-      <button id="hypnoDateNext" class="c" style="padding:4px 14px">›</button>
+    <div class="row"><button class="hp-back" data-back>&#8249; Back</button></div>
+    <div class="chart-title"><span>Sleep Stages</span><span id="hypnoDateLabel">--</span></div>
+    <div class="date-nav" id="hypnoDateNav">
+      <button id="hypnoDatePrev" class="c">&#8249;</button>
+      <span class="dl">Change date</span>
+      <button id="hypnoDateNext" class="c">&#8250;</button>
     </div>
     <div class="chart-box" style="height:120px"><canvas id="hypnoCanvas"></canvas></div>
-    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px" id="hypnoTimeRow">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px">
       <span id="hypno-start">--</span><span id="hypno-end">--</span>
     </div>
-    <div style="display:flex;justify-content:space-around;margin-top:14px;text-align:center">
-      <div><div style="font-size:18px;font-weight:800;color:#3b82f6" id="hypno-deep">--</div><div style="font-size:11px;color:var(--muted)">Deep</div></div>
-      <div><div style="font-size:18px;font-weight:800;color:#3b82f6" id="hypno-light">--</div><div style="font-size:11px;color:var(--muted)">Light</div></div>
-      <div><div style="font-size:18px;font-weight:800;color:#d4af37" id="hypno-rem">--</div><div style="font-size:11px;color:var(--muted)">REM</div></div>
+    <div class="stat-grid">
+      <div><div class="sv" id="hypno-deep">--</div><div class="sl">Deep</div></div>
+      <div><div class="sv" id="hypno-light">--</div><div class="sl">Light</div></div>
+      <div><div class="sv" id="hypno-rem">--</div><div class="sl">REM</div></div>
     </div>
-    <div style="display:flex;justify-content:space-around;margin-top:10px;text-align:center">
-      <div><div style="font-size:18px;font-weight:800" id="hypno-total">--</div><div style="font-size:11px;color:var(--muted)">Sleep duration</div></div>
-      <div><div style="font-size:18px;font-weight:800;color:#b45309" id="hypno-awake">--</div><div style="font-size:11px;color:var(--muted)">Awakenings</div></div>
+    <div class="stat-grid">
+      <div><div class="sv" id="hypno-total">--</div><div class="sl">Sleep duration</div></div>
+      <div><div class="sv" id="hypno-awake">--</div><div class="sl">Awake</div></div>
     </div>
     <div style="margin-top:14px;font-size:12px;color:var(--muted)" id="hypno-analysis"></div>
   </div>
   <div class="card">
-    <div class="chart-title"><span>📈 Sleep Quality</span><span id="sleep-chart-sub">No data</span></div>
+    <div class="chart-title"><span>Sleep Quality</span><span id="sleep-chart-sub">No data</span></div>
     <div class="range-tabs" id="sleep-range">
       <button data-range="day">Day</button>
       <button data-range="week" class="active">Week</button>
@@ -277,59 +273,81 @@
 
 <div id="pagePressure" style="display:none">
   <div class="card">
-    <div class="row"><button class="hp-back" data-back>‹ Back</button></div>
-    <div class="chart-title"><span>🎭 Stress Trend</span><span id="pressure-chart-sub">No data</span></div>
+    <div class="row"><button class="hp-back" data-back>&#8249; Back</button></div>
+    <div class="chart-title"><span>Stress</span><span id="pressure-chart-sub">No data</span></div>
     <div class="range-tabs" id="pressure-range">
       <button data-range="day" class="active">Day</button>
       <button data-range="week">Week</button>
       <button data-range="month">Month</button>
       <button data-range="year">Year</button>
     </div>
-    <div class="row" id="pressureDateNav" style="justify-content:center;align-items:center;gap:16px;margin:8px 0">
-      <button id="pressureDatePrev" class="c" style="padding:4px 14px">‹</button>
-      <span id="pressureDateLabel" style="font-size:13px;color:#d4af37;font-weight:600">--</span>
-      <button id="pressureDateNext" class="c" style="padding:4px 14px">›</button>
+    <div class="date-nav" id="pressureDateNav">
+      <button id="pressureDatePrev" class="c">&#8249;</button>
+      <span class="dl" id="pressureDateLabel">--</span>
+      <button id="pressureDateNext" class="c">&#8250;</button>
     </div>
     <div class="chart-box"><canvas id="pressureCanvas"></canvas></div>
-    <div style="display:flex;justify-content:space-around;margin-top:12px;text-align:center">
-      <div><div style="font-size:22px;font-weight:800" id="pressure-avg">--</div><div style="font-size:11px;color:var(--muted)">Avg</div></div>
-      <div><div style="font-size:22px;font-weight:800;color:#0d9488" id="pressure-high">--</div><div style="font-size:11px;color:var(--muted)">Max</div></div>
-      <div><div style="font-size:22px;font-weight:800;color:#d4af37" id="pressure-low">--</div><div style="font-size:11px;color:var(--muted)">Min</div></div>
+    <div class="stat-grid">
+      <div><div class="sv" id="pressure-avg">--</div><div class="sl">Avg</div></div>
+      <div><div class="sv" id="pressure-high">--</div><div class="sl">Max</div></div>
+      <div><div class="sv" id="pressure-low">--</div><div class="sl">Min</div></div>
+      <div><div class="sv" id="fatigueVal">--</div><div class="sl">Fatigue</div></div>
+      <div><div class="sv" id="vo2maxVal">--</div><div class="sl">VO₂max</div></div>
     </div>
-    <div style="margin-top:16px;font-size:12px">
-      <div style="color:var(--muted);margin-bottom:8px;font-weight:600">📈 Stress Reference</div>
-      <div style="display:flex;justify-content:space-between;padding:4px 0"><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#95e1d3;margin-right:6px"></i>≤25</span><span style="color:#0d9488;font-weight:600">Relaxed 🥳</span></div>
-      <div style="display:flex;justify-content:space-between;padding:4px 0"><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#60a5fa;margin-right:6px"></i>26-50</span><span style="color:#2563eb;font-weight:600">Normal 😇</span></div>
-      <div style="display:flex;justify-content:space-between;padding:4px 0"><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ffd166;margin-right:6px"></i>51-80</span><span style="color:#b45309;font-weight:600">Moderate 😐</span></div>
-      <div style="display:flex;justify-content:space-between;padding:4px 0"><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px"></i>81-100</span><span style="color:#dc2626;font-weight:600">High 😫</span></div>
+    <div style="margin-top:16px">
+      <div style="color:var(--muted);margin-bottom:6px;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.8px">Stress reference</div>
+      <div class="stat-row"><span class="k"><i class="legend-dot" style="background:var(--ok)"></i>0&ndash;25</span><span class="val">Relaxed</span></div>
+      <div class="stat-row"><span class="k"><i class="legend-dot" style="background:var(--info)"></i>26&ndash;50</span><span class="val">Normal</span></div>
+      <div class="stat-row"><span class="k"><i class="legend-dot" style="background:var(--warn)"></i>51&ndash;75</span><span class="val">Moderate</span></div>
+      <div class="stat-row"><span class="k"><i class="legend-dot" style="background:var(--bad)"></i>76&ndash;100</span><span class="val">High</span></div>
     </div>
   </div>
 </div>
 
 <div id="pageSteps" style="display:none">
   <div class="card">
-    <div class="row"><button class="hp-back" data-back>‹ Back</button></div>
-    <div class="chart-title"><span>👣 Steps Trend</span><span id="steps-chart-sub">No data</span></div>
+    <div class="row"><button class="hp-back" data-back>&#8249; Back</button></div>
+    <div class="chart-title"><span>Steps</span><span id="steps-chart-sub">No data</span></div>
     <div class="range-tabs" id="steps-range">
       <button data-range="day" class="active">Day</button>
       <button data-range="week">Week</button>
       <button data-range="month">Month</button>
       <button data-range="year">Year</button>
     </div>
-    <div class="row" id="stepsDateNav" style="justify-content:center;align-items:center;gap:16px;margin:8px 0">
-      <button id="stepsDatePrev" class="c" style="padding:4px 14px">‹</button>
-      <span id="stepsDateLabel" style="font-size:13px;color:#d4af37;font-weight:600">--</span>
-      <button id="stepsDateNext" class="c" style="padding:4px 14px">›</button>
+    <div class="date-nav" id="stepsDateNav">
+      <button id="stepsDatePrev" class="c">&#8249;</button>
+      <span class="dl" id="stepsDateLabel">--</span>
+      <button id="stepsDateNext" class="c">&#8250;</button>
     </div>
     <div class="chart-box" style="height:120px"><canvas id="stepsCanvas"></canvas></div>
-    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;padding:0 2px" id="stepsHourLabels">
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;padding:0 2px">
       <span>0</span><span>6</span><span>12</span><span>18</span><span>23</span>
     </div>
-    <div style="display:flex;justify-content:space-around;margin-top:12px;text-align:center">
-      <div><div style="font-size:20px;font-weight:800" id="steps-total">--</div><div style="font-size:11px;color:var(--muted)">Total</div></div>
-      <div><div style="font-size:20px;font-weight:800" id="steps-avg">--</div><div style="font-size:11px;color:var(--muted)">Avg</div></div>
-      <div><div style="font-size:20px;font-weight:800;color:#0d9488" id="steps-high">--</div><div style="font-size:11px;color:var(--muted)">Max</div></div>
-      <div><div style="font-size:20px;font-weight:800;color:#d4af37" id="steps-low">--</div><div style="font-size:11px;color:var(--muted)">Min</div></div>
+    <div class="stat-grid">
+      <div><div class="sv" id="steps-total">--</div><div class="sl">Total</div></div>
+      <div><div class="sv" id="steps-avg">--</div><div class="sl">Avg</div></div>
+      <div><div class="sv" id="steps-high">--</div><div class="sl">Max</div></div>
+      <div><div class="sv" id="steps-low">--</div><div class="sl">Min</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="pageTemp" style="display:none">
+  <div class="card">
+    <div class="row"><button class="hp-back" data-back>&#8249; Back</button></div>
+    <div class="chart-title"><span>Temperature</span><span id="temp-chart-sub">No data</span></div>
+    <div class="range-tabs" id="temp-range">
+      <button data-range="day" class="active">Day</button>
+      <button data-range="week">Week</button>
+      <button data-range="month">Month</button>
+      <button data-range="year">Year</button>
+    </div>
+    <div class="chart-box"><canvas id="tempCanvas"></canvas></div>
+    <div class="stat-grid">
+      <div><div class="sv" id="temp-latest">--</div><div class="sl">Latest °C</div></div>
+      <div><div class="sv" id="temp-avg">--</div><div class="sl">Avg °C</div></div>
+      <div><div class="sv" id="temp-high">--</div><div class="sl">Max °C</div></div>
+      <div><div class="sv" id="temp-low">--</div><div class="sl">Min °C</div></div>
     </div>
   </div>
 </div>
