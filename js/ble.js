@@ -31,8 +31,11 @@ function feed(kind, data) {
 
 
 function handle(type, p) {
+  // 04 组是戒指→App 的推送: 必须先回 ACK(04 <key> {00})再解码, 否则戒指会重发;
+  // 1 字节 0xFB~0xFF 是错误帧, 不回 ACK
+  if ((type >> 8) === 0x04 && !(p.length === 1 && p[0] >= 0xfb)) send(type, [0x00]);
   if (histBusy && type === histEchoType && p.length < 10) {
-    log(`${HIST_LABEL[histReqKey] || histReqKey || "⌛️"} — no new records`);
+    log(`${HIST_LABEL[histReqKey] || histReqKey || "?"} — no new records`);
     finishHist();
     return;
   }
@@ -43,30 +46,40 @@ function handle(type, p) {
   }
   switch (type) {
     case 0x0200:
-      if (p.length > 0 && p[0] === 0xfe) log("Battery 0xfe (ring not ready)");
+      if (p.length === 1 && p[0] >= 0xfb) { log("Device info error 0x" + p[0].toString(16)); break; }
+      // 真电量在回复的 payload[5] (0x64=100%)。2026-09-25 用户 SmartHealth 显示 78%,
+      // 连上后这里应读出 78 才能最终确认该偏移在 52F5 上成立。
+      if (p.length > 5 && p[5] <= 100) setRingBattery(p[5], "02 00");
+      else log("02 00 reply [" + hex(p) + "]");
+      break;
+    case 0x0201:
+      // 功能位图回复(约66字节): 哪些传感器可用(体温/血压/压力/疲劳/血糖), 先打原始字节备查
+      log("02 01 capability (" + p.length + "B): [" + hex(p) + "]");
       break;
     case 0x020c:
       if (p.length >= 2) {
         const s = p[0] | (p[1] << 8);
-        if (s > 0) { $("steps").textContent = s; setStepsBadge(s); }
+        if (s > 0) { $("steps").textContent = s; }
       }
       break;
     case 0x0600:
       if (p.length >= 4) {
         const s = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
-        if (s > 0 && s < 200000) { $("steps").textContent = s; setStepsBadge(s); }
+        if (s > 0 && s < 200000) { $("steps").textContent = s; }
       } else if (p.length >= 2) {
         const s = p[0] | (p[1] << 8);
-        if (s > 0 && s < 200000) { $("steps").textContent = s; setStepsBadge(s); }
+        if (s > 0 && s < 200000) { $("steps").textContent = s; }
       }
       break;
     case 0x0615:
-      if (p.length >= 1 && p[0] <= 100) log("Battery push " + p[0] + "%");
+      // 电池推送 [充电状态][电量%]: 旧代码误把 p[0](充电状态) 当成了电量
+      if (p.length >= 2 && p[1] <= 100) setRingBattery(p[1], p[0] ? "charging" : "06 15");
+      else log("06 15 [" + hex(p) + "]");
       break;
     case 0x0601:
       if (p[0] > 0 && p[0] < 250) {
         $("hr").textContent = p[0];
-        setEmoji("hr", evalHR(p[0]));
+        setDot("hr", evalHR(p[0]));
         add("hr", p[0]);
         if (isMeasuring) onMeasureDone("hr");
       }
@@ -74,7 +87,7 @@ function handle(type, p) {
     case 0x0602:
       if (p[0] > 0 && p[0] <= 100) {
         $("spo2").textContent = p[0];
-        setEmoji("spo2", evalSpo2(p[0]));
+        setDot("spo2", evalSpo2(p[0]));
         add("spo2", p[0]);
         if (isMeasuring) onMeasureDone("spo2");
       }
@@ -83,12 +96,12 @@ function handle(type, p) {
       if (p.length >= 3 && p[0] > 0 && p[1] > 0) {
         $("bp").textContent = `${p[0]} / ${p[1]}`;
         $("bpHr").textContent = "HR " + p[2];
-        setEmoji("bp", evalBP(p[0], p[1]));
+        setDot("bp", evalBP(p[0], p[1]));
         add("bp", { sys: p[0], dia: p[1], hr: p[2] });
         if (isMeasuring) onMeasureDone("bp");
       } else if (p.length >= 4 && p[3] > 0) {
         $("hrv").textContent = p[3];
-        setEmoji("hrv", evalHRV(p[3]));
+        setDot("hrv", evalHRV(p[3]));
         add("hrv", p[3]);
         if (isMeasuring) onMeasureDone("hrv");
       }
@@ -111,9 +124,11 @@ function handle(type, p) {
         const data = decodePressure(buf);
         addUnique("pressure", data);
         if (data.length && $("pressureVal")) {
-          const last = data[data.length - 1].pressure;
-          $("pressureVal").textContent = last;
-          setEmoji("pressure", evalPressure(last));
+          const last = data[data.length - 1];
+          $("pressureVal").textContent = last.pressure;
+          setDot("pressure", evalPressure(last.pressure));
+          if ($("fatigueVal")) $("fatigueVal").textContent = last.fatigue || "--";
+          if ($("vo2maxVal")) $("vo2maxVal").textContent = last.vo2max || "--";
           onMeasureDone("pressure");
         }
       } else if (histReqKey === "02") {
@@ -125,7 +140,6 @@ function handle(type, p) {
           for (const x of data) if (sameDay(new Date(x.t), today)) sum += x.steps;
           if (sum > 0 && $("steps") && ($("steps").textContent === "--" || +$("steps").textContent < sum)) {
             $("steps").textContent = sum;
-            setStepsBadge(sum);
           }
         } else if (buf.length) add("raw", { key: histReqKey, label: HIST_LABEL[histReqKey] || histReqKey, frameType: histType, hex: hex(buf), bytes: buf.length });
       } else if (histReqKey === "04") {
@@ -135,14 +149,27 @@ function handle(type, p) {
           if (!dup) add("sleep", data);
           if ($("sleepMin")) $("sleepMin").textContent = `${Math.floor(data.totalMin / 60)}h${data.totalMin % 60}m`;
           setSleepEmojis(data);
-          log(`Sleep parsed: ${data.totalMin} min (deep ${data.deepMin}/light ${data.lightMin}/REM${data.remMin}）`);
+          log(`Sleep parsed: ${data.totalMin} min (deep ${data.deepMin}/light ${data.lightMin}/REM ${data.remMin}/awake ${data.awakeMin}）`);
         } else if (buf.length) {
           add("raw", { key: histReqKey, label: HIST_LABEL[histReqKey] || histReqKey, frameType: histType, hex: hex(buf), bytes: buf.length });
           if ($("sleepMin") && $("sleepMin").textContent === "--") $("sleepMin").textContent = "Data available";
           log(`Sleep data ${buf.length} bytes — could not parse stages (raw saved)`);
         } else {
           if ($("sleepMin") && $("sleepMin").textContent === "--") $("sleepMin").textContent = "No record";
-          log("Sleep ⌛️ empty (ring may not have been worn overnight)");
+          log("Sleep history empty (ring may not have been worn overnight)");
+        }
+      } else if (histReqKey === "1e") {
+        const data = decodeTemp(buf);
+        if (data.length) {
+          addUnique("tempHist", data);
+          const last = data[data.length - 1];
+          if ($("tempVal")) { $("tempVal").textContent = last.temp.toFixed(1); setDot("temp", evalTemp(last.temp)); }
+          log(`Temp: ${data.length} records, latest ${last.temp}°C @ ${last.local}`);
+        } else if (buf.length) {
+          add("raw", { key: histReqKey, label: HIST_LABEL[histReqKey] || histReqKey, frameType: histType, hex: hex(buf), bytes: buf.length });
+          log(`Temp data ${buf.length} bytes — no valid records (all fillers?)`);
+        } else {
+          log("Temp: no records (monitor was just enabled — wear the ring and sync later)");
         }
       } else if (buf.length) {
         add("raw", { key: histReqKey, label: HIST_LABEL[histReqKey] || histReqKey, frameType: histType, hex: hex(buf), bytes: buf.length });
@@ -175,6 +202,7 @@ async function connect() {
       c1 = c3 = null;
       histBusy = false;
       isMeasuring = false;
+      measuringMode = null;
       measuringCard = null;
       clearProgress();
     });
@@ -187,6 +215,7 @@ async function connect() {
     await send(0x020c);
     await send(0x032f, [0x01, 0x00]);
     await send(0x0309, [0x01, 0x00, 0x02, 0xa0]);
+    await send(0x0120, [0x01, 60]); // 全天体温监测开(间隔60分钟): 不开戒指不记录体温历史
     (async () => {
       isMeasuring = true;
       try {
@@ -227,10 +256,12 @@ async function measure(mode) {
     measuringCard = null;
     isMeasuring = false;
     clearProgress();
-    await send(0x032f, [0x00, 0x00]);
+    await send(0x032f, [0x00, measuringMode ?? 0]); // stop 必须回显启动时的 mode, 否则停的是心率
+    measuringMode = null;
     setStatus("Connected · " + (device?.name || "TK5"), "connected");
     return;
   }
+  measuringMode = mode;
   await send(0x032f, [0x01, mode]);
 }
 
@@ -271,7 +302,7 @@ function hist(key) {
     histEchoType = 0x0500 | parseInt(key, 16);
     histResolve = resolve;
     document.querySelectorAll("[data-h]").forEach(b => b.disabled = true);
-    setStatus(`Syncing ${HIST_LABEL[key] || "⌛️"}...`);
+    setStatus(`Syncing ${HIST_LABEL[key] || key}…`);
     await send(histEchoType);
     histTimer = setTimeout(() => { if (histBusy) finishHist(); }, 20000);
   });

@@ -7,7 +7,13 @@ const hex = a => Array.from(a).map(x => x.toString(16).padStart(2, "0")).join(" 
 const cat = (a, b) => { const o = new Uint8Array(a.length + b.length); o.set(a, 0); o.set(b, a.length); return o; };
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function pad2(n) { return String(n).padStart(2, "0"); }
-function ts(b0, b1, b2, b3) { return new Date((b0 + b1 * 256 + b2 * 65536 + b3 * 16777216 + EPOCH) * 1000); }
+function ts(b0, b1, b2, b3) {
+  const sec = b0 + b1 * 256 + b2 * 65536 + b3 * 16777216;
+  // 戒指发的是本地挂钟(自 2000 年起的秒数), 没有时区概念:
+  // 先按 UTC 误读, 再把本机时区偏移反解回去, 否则所有时间整体平移一个 UTC offset
+  const labeled = new Date((sec + EPOCH) * 1000);
+  return new Date(labeled.getTime() + labeled.getTimezoneOffset() * 60000);
+}
 function fmt(d) { return d.toLocaleString("zh-CN", { hour12: false }); }
 function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
 function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }

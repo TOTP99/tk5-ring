@@ -20,7 +20,6 @@
 
 const STORE_KEYS = {
   RECORDS: "tk5Records",
-  LAST_CHARGE: "tk5LastCharge",
   WEATHER_GEO: "tk5WeatherGeo",
   WEATHER_CACHE: "tk5WeatherCache",
   SEASON_EFFECT: "tk5SeasonEffect"
@@ -85,22 +84,6 @@ function clearAllRecords() {
   _persistTimer = null;
   safeRemove(STORE_KEYS.RECORDS);
   if (typeof refreshAll === "function") refreshAll();
-}
-
-/* ---- Battery-since-charge estimate ---- */
-function getLastCharge() {
-  const v = safeGetStr(STORE_KEYS.LAST_CHARGE);
-  return v ? +v : null;
-}
-function setLastCharge(tsMs) {
-  safeSetStr(STORE_KEYS.LAST_CHARGE, tsMs);
-}
-function daysSinceCharge() {
-  const last = getLastCharge();
-  if (last == null) return 0;
-  const a = startOfDay(new Date(last));
-  const b = startOfDay(new Date());
-  return Math.max(0, Math.round((b - a) / 86400000));
 }
 
 /* ---- Weather cache ---- */

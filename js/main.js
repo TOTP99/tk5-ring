@@ -59,6 +59,7 @@ setupRangeTabs("pressure-range", "pressure", drawPressureChart);
 setupRangeTabs("spo2-range", "spo2", drawSpo2Chart);
 setupRangeTabs("hrv-range", "hrv", drawHRVChart);
 setupRangeTabs("steps-range", "steps", drawStepsChart);
+setupRangeTabs("temp-range", "temp", drawTempChart);
 
 $("btnControl").onclick = () => {
   const show = $("panel-control").style.display === "none";
@@ -79,6 +80,7 @@ $("card-hrv").onclick = () => { showPage("pageHRV"); drawHRVChart(); };
 $("card-sleep").onclick = () => { showPage("pageSleep"); drawSleepChart(); drawHypnogram(); };
 $("card-pressure").onclick = () => { showPage("pagePressure"); drawPressureChart(); };
 $("card-steps").onclick = (e) => { if (e.target.closest("#btnSteps")) return; showPage("pageSteps"); drawStepsChart(); };
+$("card-temp").onclick = () => { showPage("pageTemp"); drawTempChart(); };
 
 $("pressureDatePrev").onclick = () => { pressureDate.setDate(pressureDate.getDate() - 1); drawPressureChart(); };
 $("pressureDateNext").onclick = () => { pressureDate.setDate(pressureDate.getDate() + 1); drawPressureChart(); };
@@ -88,7 +90,6 @@ $("stepsDatePrev").onclick = () => { stepsDate.setDate(stepsDate.getDate() - 1);
 $("stepsDateNext").onclick = () => { stepsDate.setDate(stepsDate.getDate() + 1); drawStepsChart(); };
 
 /* ---- Bootstrap ---- */
-initBatteryTap();
 updateClock();
 setInterval(updateClock, 1000);
 initWeather();

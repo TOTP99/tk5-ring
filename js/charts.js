@@ -27,20 +27,23 @@ function renderHist() {
       cards.push(`<div class="rc"><div class="t">${esc(fmt(new Date(rec.time)))} Live</div><div>HRV <b>${rec.data}</b></div></div>`);
     } else if (rec.type === "sleep" && rec.data) {
       const d = rec.data;
-      cards.push(`<div class="rc"><div class="t">😴 ${esc(d.start)} ~ ${esc(d.end)} (${d.totalMin} min)</div><div>Deep <b>${d.deepMin}</b>m · Light <b>${d.lightMin}</b>m · REM <b>${d.remMin}</b>m</div></div>`);
+      cards.push(`<div class="rc"><div class="t">Sleep &middot; ${esc(d.start)} &ndash; ${esc(d.end)} (${d.totalMin} min)</div><div>Deep <b>${d.deepMin}</b>m &middot; Light <b>${d.lightMin}</b>m &middot; REM <b>${d.remMin}</b>m &middot; Awake <b>${d.awakeMin ?? 0}</b>m</div></div>`);
     } else if (rec.type === "pressure" && rec.data) {
       for (const x of [...rec.data].reverse())
         cards.push(`<div class="rc"><div class="t">${esc(x.local)}</div><div>Stress <b>${x.pressure}</b></div></div>`);
     } else if (rec.type === "stepsHist" && rec.data) {
       for (const x of [...rec.data].reverse())
         cards.push(`<div class="rc"><div class="t">${esc(x.local)}</div><div>Steps <b>${x.steps}</b>${x.distance ? ` · Dist <b>${x.distance}</b>m` : ""}${x.calories ? ` · Cal <b>${x.calories}</b>` : ""}</div></div>`);
+    } else if (rec.type === "tempHist" && Array.isArray(rec.data)) {
+      for (const x of [...rec.data].reverse())
+        cards.push(`<div class="rc"><div class="t">${esc(x.local)}</div><div>Temp <b>${x.temp.toFixed(1)}</b>°C</div></div>`);
     } else if (rec.type === "raw") {
       const d = rec.data;
-      cards.push(`<div class="rc"><div class="t">${esc(fmt(new Date(rec.time)))} · ${esc(d.label)} · frame 0x${(d.frameType || 0).toString(16).padStart(4, "0")} · ${d.bytes}B</div><div style="font:11px/1.4 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;color:#d4af37">${esc(d.hex)}</div></div>`);
+      cards.push(`<div class="rc"><div class="t">${esc(fmt(new Date(rec.time)))} · ${esc(d.label)} · frame 0x${(d.frameType || 0).toString(16).padStart(4, "0")} · ${d.bytes}B</div><div style="font:11px/1.4 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;color:#d8b56b">${esc(d.hex)}</div></div>`);
     }
     if (cards.length >= 40) break;
   }
-  box.innerHTML = cards.length ? cards.join("") : `<div class="empty-hint">No records yet — connect the ring 🐱</div>`;
+  box.innerHTML = cards.length ? cards.join("") : `<div class="empty-hint">No records yet — connect the ring to sync.</div>`;
 }
 
 function initCanvas(id) {
@@ -56,7 +59,7 @@ function initCanvas(id) {
 }
 
 function drawEmpty(ctx, w, h, msg) {
-  ctx.fillStyle = "#8a6f7a";
+  ctx.fillStyle = "#8a8578";
   ctx.font = "13px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(msg, w / 2, h / 2 + 4);
@@ -122,7 +125,7 @@ function drawTrendChart() {
     canvas: "trendCanvas", type: "hr", rangeKey: "trend", fromAll: "hr",
     subId: "chart-sub", statIds: ["hr-avg", "hr-high", "hr-low"],
     emptyMsg: "Measure a few more times to see the trend",
-    stroke: "#d4af37", fill: a => `rgba(212,175,55,${a})`, dot: "#d4af37"
+    stroke: "#d8b56b", fill: a => `rgba(216,181,107,${a})`, dot: "#d8b56b"
   });
 }
 
@@ -144,6 +147,32 @@ function drawHRVChart() {
   });
 }
 
+function drawTempChart() {
+  const c = initCanvas("tempCanvas");
+  if (!c) return;
+  const { ctx, width, height } = c;
+  const cutoff = Date.now() - (RANGE_DAYS[chartRange.temp] || 7) * 86400000;
+  const pts = [];
+  for (const rec of records) {
+    if (rec.type === "tempHist" && Array.isArray(rec.data))
+      for (const x of rec.data) if (x.temp && (x.t || 0) >= cutoff) pts.push({ t: x.t, v: x.temp });
+  }
+  pts.sort((a, b) => a.t - b.t);
+  const values = pts.slice(-40).map(p => p.v);
+  const sub = $("temp-chart-sub");
+  if (sub) sub.textContent = values.length ? `${values.length} samples` : "No data";
+  if (values.length) {
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    setStats(["temp-latest", "temp-avg", "temp-high", "temp-low"],
+      [values[values.length - 1].toFixed(1), avg.toFixed(1),
+       Math.max(...values).toFixed(1), Math.min(...values).toFixed(1)]);
+  } else {
+    setStats(["temp-latest", "temp-avg", "temp-high", "temp-low"], ["--", "--", "--", "--"]);
+  }
+  if (values.length < 2) return drawEmpty(ctx, width, height, "Sync temp to see the chart");
+  drawArea(ctx, width, height, values, "#d99a5b", a => `rgba(217,154,91,${a})`, "#d99a5b");
+}
+
 function drawSleepChart() {
   const c = initCanvas("sleepCanvas");
   if (!c) return;
@@ -154,7 +183,7 @@ function drawSleepChart() {
   points = points.reverse().slice(-20);
   const sub = $("sleep-chart-sub");
   if (sub) sub.textContent = points.length ? `${points.length} samples` : "No data";
-  if (points.length < 2) return drawEmpty(ctx, width, height, "Sync sleep ⌛️ to see the chart");
+  if (points.length < 2) return drawEmpty(ctx, width, height, "Sync sleep to see the chart");
   drawArea(ctx, width, height, points, "#3b82f6", a => `rgba(59,130,246,${a})`, "#3b82f6");
 }
 
@@ -190,9 +219,9 @@ function drawBPChart() {
   const yOf = v => height - ((v - min) / (max - min)) * (height - 20) - 10;
   ctx.save();
   ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
-  ctx.strokeStyle = "rgba(212,175,55,0.6)";
+  ctx.strokeStyle = "rgba(216,181,107,0.6)";
   ctx.beginPath(); ctx.moveTo(0, yOf(SYS)); ctx.lineTo(width, yOf(SYS)); ctx.stroke();
-  ctx.fillStyle = "rgba(212,175,55,0.9)"; ctx.font = "9px sans-serif"; ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(216,181,107,0.9)"; ctx.font = "9px sans-serif"; ctx.textAlign = "left";
   ctx.setLineDash([]); ctx.fillText("120", 2, yOf(SYS) - 2);
   ctx.setLineDash([4, 4]);
   ctx.strokeStyle = "rgba(13,148,136,0.6)";
@@ -204,10 +233,10 @@ function drawBPChart() {
     points.forEach((pt, i) => { const x = i * stepX, y = yOf(pt[key]); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
     ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineJoin = "round"; ctx.stroke();
   };
-  drawLine("sys", "#d4af37"); drawLine("dia", "#95e1d3");
+  drawLine("sys", "#d8b56b"); drawLine("dia", "#8fb8a8");
   points.forEach((pt, i) => {
     const x = i * stepX;
-    [["sys", "#d4af37", SYS], ["dia", "#95e1d3", DIA]].forEach(([k, col, lim]) => {
+    [["sys", "#d8b56b", SYS], ["dia", "#8fb8a8", DIA]].forEach(([k, col, lim]) => {
       ctx.beginPath(); ctx.arc(x, yOf(pt[k]), 3.5, 0, Math.PI * 2);
       ctx.fillStyle = pt[k] > lim ? "#ef4444" : col; ctx.fill();
     });
@@ -233,7 +262,7 @@ function drawPressureChart() {
   if (sub) sub.textContent = raw.length ? `${raw.length} samples` : "No data";
   if (!raw.length) {
     setStats(["pressure-avg", "pressure-high", "pressure-low"], ["--", "--", "--"]);
-    return drawEmpty(ctx, width, height, "Sync stress ⌛️ to see the chart");
+    return drawEmpty(ctx, width, height, "Sync stress to see the chart");
   }
   const values = raw.map(x => x.pressure);
   setStats(["pressure-avg", "pressure-high", "pressure-low"], [
@@ -249,7 +278,7 @@ function drawPressureChart() {
   bars.forEach((v, i) => {
     if (v == null) return;
     const h = (v / 100) * (height - 10);
-    ctx.fillStyle = "#d4af37";
+    ctx.fillStyle = "#d8b56b";
     ctx.beginPath();
     const x = i * barW + barW * 0.15, bw = barW * 0.7;
     ctx.roundRect(x, height - h, bw, h, 4);
@@ -277,7 +306,7 @@ function drawHypnogram() {
   setStats(["hypno-deep", "hypno-light", "hypno-rem", "hypno-total", "hypno-awake"], [
     `${d.deepMin}min`, `${d.lightMin}min`, `${d.remMin}min`,
     `${Math.floor(d.totalMin / 60)}h${d.totalMin % 60}min`,
-    d.sessionCount > 1 ? d.sessionCount - 1 : 0
+    `${d.awakeMin ?? 0}min`
   ]);
   const segs = d.segments;
   const tMin = Math.min(...segs.map(s => new Date(s.start).getTime()));
@@ -287,15 +316,17 @@ function drawHypnogram() {
     fmt(new Date(tMax)).split(" ").pop().slice(0, 5)
   ]);
   if ($("hypno-analysis")) {
-    const text = d.totalMin >= 420 ? "Sleep duration looks good 😺" : d.totalMin >= 300 ? "Sleep duration is average — try a bit more rest" : "Sleep duration is short — rest more";
-    $("hypno-analysis").textContent = `📈 ${text}`;
+    const text = d.totalMin >= 420 ? "Sleep duration looks good." : d.totalMin >= 300 ? "Sleep duration is average — a bit more rest would help." : "Sleep duration is short — consider resting more.";
+    $("hypno-analysis").textContent = `${text}`;
   }
   const span = (tMax - tMin) || 1;
   const xOf = t => (t - tMin) / span * width;
   const LEVEL = {
-    3: { y: height * 0.12, h: height * 0.30, color: "#d4af37" },
+    3: { y: height * 0.12, h: height * 0.30, color: "#d8b56b" },
     2: { y: height * 0.46, h: height * 0.30, color: "#3b82f6" },
-    1: { y: height * 0.80, h: height * 0.18, color: "#3b82f6" }
+    5: { y: height * 0.46, h: height * 0.30, color: "#7aa5f8" },
+    1: { y: height * 0.80, h: height * 0.18, color: "#3b82f6" },
+    4: { y: height * 0.46, h: height * 0.08, color: "#9ca3af" }
   };
   for (const seg of segs) {
     const lvl = LEVEL[seg.stage];
@@ -338,12 +369,12 @@ function drawStepsChart() {
       nonZero.length ? Math.max(...buckets) : "--",
       nonZero.length ? Math.min(...nonZero) : "--"
     ]);
-    if (!nonZero.length) return drawEmpty(ctx, width, height, "Sync steps ⌛️ for hourly bars");
+    if (!nonZero.length) return drawEmpty(ctx, width, height, "Sync steps for hourly bars");
     const max = Math.max(...buckets, 1), barW = width / 24;
     buckets.forEach((v, i) => {
       if (v <= 0) return;
       const h = (v / max) * (height - 12);
-      ctx.fillStyle = "#d4af37";
+      ctx.fillStyle = "#d8b56b";
       ctx.beginPath();
       ctx.roundRect(i * barW + barW * 0.15, height - h, barW * 0.7, h, 4);
       ctx.fill();
@@ -361,7 +392,7 @@ function drawStepsChart() {
   if (sub) sub.textContent = points.length ? `${points.length} days` : "No data";
   if (!points.length) {
     setStats(["steps-total", "steps-avg", "steps-high", "steps-low"], ["--", "--", "--", "--"]);
-    return drawEmpty(ctx, width, height, "Sync steps ⌛️ to see the chart");
+    return drawEmpty(ctx, width, height, "Sync steps to see the chart");
   }
   const total = points.reduce((a, b) => a + b, 0);
   setStats(["steps-total", "steps-avg", "steps-high", "steps-low"], [
@@ -369,13 +400,13 @@ function drawStepsChart() {
   ]);
   if (points.length === 1) {
     const max = points[0] || 1;
-    ctx.fillStyle = "#d4af37";
+    ctx.fillStyle = "#d8b56b";
     ctx.beginPath();
     ctx.roundRect(width * 0.35, height - (points[0] / max) * (height - 12), width * 0.3, (points[0] / max) * (height - 12), 6);
     ctx.fill();
     return;
   }
-  drawArea(ctx, width, height, points, "#d4af37", a => `rgba(212,175,55,${a})`, "#d4af37");
+  drawArea(ctx, width, height, points, "#d8b56b", a => `rgba(216,181,107,${a})`, "#d8b56b");
 }
 
 function refreshAll() {
@@ -388,4 +419,5 @@ function refreshAll() {
   drawSpo2Chart();
   drawHRVChart();
   drawStepsChart();
+  drawTempChart();
 }

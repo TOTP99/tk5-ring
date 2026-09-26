@@ -68,8 +68,9 @@ function stopSeasonEffect() {
 function updateSeasonToggleUI() {
   const btn = $("btnSeasonToggle");
   if (!btn) return;
-  btn.textContent = seasonEnabled ? SEASON_EMOJI[currentSeason()] : "🚫";
-  btn.title = seasonEnabled ? "Tap to turn off the falling effect" : "Tap to turn the falling effect back on";
+  btn.textContent = seasonEnabled ? "Effects on" : "Effects";
+  btn.classList.toggle("on", seasonEnabled);
+  btn.title = seasonEnabled ? "Tap to turn off the ambient effect" : "Tap to turn the ambient effect back on";
 }
 
 function initSeasonEffect() {

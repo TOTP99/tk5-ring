@@ -43,72 +43,45 @@ function setStatus(text, type = "connected") {
   }
 }
 
-function setEmoji(key, emoji) {
+function setDot(key, level) {
   const el = $(key + "Emoji");
-  if (el) el.textContent = emoji;
+  if (!el) return;
+  const sm = el.classList.contains("sm") ? " sm" : "";
+  el.className = "metric-dot" + sm + (level ? " " + level : "");
 }
 
-/* Vital-sign indicators: normal 🌹 / abnormal 🥀 (generic adult reference
-   ranges, not a medical diagnosis — same thresholds as before, just a
-   simpler two-state readout). */
-function evalHR(v) { return (v >= 60 && v <= 100) ? "🌹" : "🥀"; }
-function evalSpo2(v) { return v >= 95 ? "🌹" : "🥀"; }
-function evalBP(sys, dia) { return (sys < 120 && dia < 80 && sys >= 90 && dia >= 60) ? "🌹" : "🥀"; }
-function evalHRV(v) { return v >= 20 ? "🌹" : "🥀"; }
+/* Vital-sign status: ok / warn (generic adult reference ranges,
+   not a medical diagnosis). Rendered as a small dot, no emoji. */
+function evalHR(v) { return (v >= 60 && v <= 100) ? "ok" : "warn"; }
+function evalSpo2(v) { return v >= 95 ? "ok" : "warn"; }
+function evalBP(sys, dia) { return (sys < 120 && dia < 80 && sys >= 90 && dia >= 60) ? "ok" : "warn"; }
+function evalHRV(v) { return v >= 20 ? "ok" : "warn"; }
+function evalTemp(v) { return (v >= 36.1 && v <= 37.2) ? "ok" : "warn"; }
 
-/* Sleep: two independent dimensions.
-   Duration adequate 🌸 / short 🍄. Depth (deep-sleep share) adequate 🌺 / low 🍄‍🟫. */
+/* Sleep: two dots — deep-sleep share and duration. */
 function setSleepEmojis(data) {
   const q = $("sleepQualityEmoji"), d = $("sleepDurationEmoji");
-  if (q) q.textContent = data.score >= 15 ? "🌺" : "🍄‍🟫";
-  if (d) d.textContent = data.totalMin >= 420 ? "🌸" : "🍄";
+  if (q) q.className = "metric-dot sm " + (data.score >= 15 ? "ok" : "warn");
+  if (d) d.className = "metric-dot sm " + (data.totalMin >= 420 ? "ok" : "warn");
 }
 
-/* Stress score: relaxed 🥳 / normal 😇 / high 😫 (unchanged thresholds) */
+/* Stress score: ok / info / warn / bad */
 function evalPressure(v) {
-  if (v >= 76) return "😫";
-  if (v >= 51) return "😐";
-  return "🥳";
+  if (v >= 76) return "bad";
+  if (v >= 51) return "warn";
+  if (v >= 26) return "info";
+  return "ok";
 }
 
-/* Steps milestones: 6000+ 🎖️, 10000+ 🥇, 15000+ 🏆 */
-function evalSteps(steps) {
-  if (steps >= 15000) return "🏆";
-  if (steps >= 10000) return "🥇";
-  if (steps >= 6000) return "🎖️";
-  return "";
-}
-function setStepsBadge(steps) {
-  const el = $("stepsBadge");
-  if (el) el.textContent = evalSteps(+steps || 0);
-}
-
-/* ---- Battery-since-charge indicator ----
-   🔋 321 🚨 — "321" is bold yellow by default. Tapping 🔋 resets the
-   clock. Every 24h that passes since the last tap, one more digit
-   turns red, right to left through the sequence 3 → 2 → 1: after 24h
-   "3" turns red, after 48h "2" also turns red, after 72h "1" also
-   turns red. After 96h (all three digits red) 🚨 lights up with a
-   pulsing glow to signal the ring needs charging. */
-function updateBatteryUI() {
-  const days = daysSinceCharge();
-  const c3 = $("bat3"), c2 = $("bat2"), c1 = $("bat1"), warn = $("batWarn");
-  if (!c3) return;
-  c3.classList.toggle("bat-due", days >= 1);
-  c2.classList.toggle("bat-due", days >= 2);
-  c1.classList.toggle("bat-due", days >= 3);
-  if (warn) warn.classList.toggle("active", days >= 4);
-}
-function initBatteryTap() {
-  const batIconEl = $("batIcon");
-  if (!batIconEl) return;
-  batIconEl.style.cursor = "pointer";
-  batIconEl.onclick = () => {
-    setLastCharge(Date.now());
-    updateBatteryUI();
-    log("Battery estimate reset to full (100%)");
-  };
-  updateBatteryUI();
+/* ---- Battery pill: ring's own % only ---- */
+let lastRingBattery = null;
+function setRingBattery(pct, src) {
+  const el = $("batReal");
+  if (el) el.textContent = pct + "%";
+  if (pct !== lastRingBattery) {
+    lastRingBattery = pct;
+    log("Ring battery " + pct + "% (via " + src + ")");
+  }
 }
 
 /* ---- Electronic clock card ---- */
@@ -120,29 +93,31 @@ function updateClock() {
   }
   if ($("clockWeek")) $("clockWeek").textContent = WEEKDAYS_EN[now.getDay()];
   if ($("clockTime")) $("clockTime").textContent = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
-  updateBatteryUI();
 }
 
 /* ---- Weather (best-effort, geolocation -> IP fallback -> fixed default) ---- */
-function weatherEmoji(code) {
+/* ---- Weather: short text labels instead of emoji ---- */
+function weatherLabel(code) {
   // WMO weather interpretation codes
-  if (code == null || code === "") return "🌡️";
+  if (code == null || code === "") return "";
   const c = +code;
-  if (c === 0) return "☀️";
-  if (c <= 3) return "⛅";
-  if (c <= 48) return "🌫️";
-  if (c <= 57) return "🌧️";
-  if (c <= 67) return "🌧️";
-  if (c <= 77) return "❄️";
-  if (c <= 82) return "🌧️";
-  if (c <= 86) return "❄️";
-  if (c <= 99) return "⛈️";
-  return "🌡️";
+  if (c === 0) return "Clear";
+  if (c === 1) return "Mostly clear";
+  if (c <= 3) return "Cloudy";
+  if (c <= 48) return "Fog";
+  if (c <= 57) return "Drizzle";
+  if (c <= 67) return "Rain";
+  if (c <= 77) return "Snow";
+  if (c <= 82) return "Showers";
+  if (c <= 86) return "Snow";
+  if (c <= 99) return "Storm";
+  return "";
 }
-function setWeatherUI(icon, temp) {
-  const ic = $("wxIcon"), tp = $("wxTemp");
-  if (ic) ic.textContent = icon;
-  if (tp) tp.textContent = temp == null || temp === "" ? "--" : String(Math.round(+temp));
+function setWeatherUI(label, temp) {
+  const el = $("wxText");
+  if (!el) return;
+  if (temp == null || temp === "") { el.textContent = label || "--"; return; }
+  el.textContent = label ? `${label} · ${Math.round(+temp)}°C` : `${Math.round(+temp)}°C`;
 }
 async function getGeoPosition() {
   const cached = getWeatherGeoCache();
@@ -181,18 +156,18 @@ async function fetchWeather() {
     const cur = data.current || {};
     const temp = cur.temperature_2m;
     const code = cur.weather_code;
-    setWeatherUI(weatherEmoji(code), temp);
-    setWeatherCache({ temp, code, icon: weatherEmoji(code), ts: Date.now() });
+    setWeatherUI(weatherLabel(code), temp);
+    setWeatherCache({ temp, code, icon: weatherLabel(code), ts: Date.now() });
   } catch (e) {
     const c = getWeatherCache();
-    if (c && c.temp != null) { setWeatherUI(c.icon || weatherEmoji(c.code), c.temp); return; }
-    setWeatherUI("🌡️", null);
+    if (c && c.temp != null) { setWeatherUI(c.icon || weatherLabel(c.code), c.temp); return; }
+    setWeatherUI("", null);
     if (typeof log === "function") log("Weather fetch failed: " + (e && e.message ? e.message : e));
   }
 }
 function initWeather() {
   const c = getWeatherCache();
-  if (c && c.temp != null && Date.now() - (c.ts || 0) < 90 * 60 * 1000) setWeatherUI(c.icon || weatherEmoji(c.code), c.temp);
+  if (c && c.temp != null && Date.now() - (c.ts || 0) < 90 * 60 * 1000) setWeatherUI(c.icon || weatherLabel(c.code), c.temp);
   fetchWeather();
   setInterval(fetchWeather, 30 * 60 * 1000);
   const card = $("card-clock");
@@ -260,26 +235,34 @@ function setupRangeTabs(containerId, chartKey, redraw) {
 /* ---- Repaint cards from saved records on page load (before any live data arrives) ---- */
 function hydrateFromRecords() {
   for (const rec of records) {
-    if (rec.type === "hr" && $("hr").textContent === "--") { $("hr").textContent = rec.data; setEmoji("hr", evalHR(rec.data)); }
-    else if (rec.type === "spo2" && $("spo2").textContent === "--") { $("spo2").textContent = rec.data; setEmoji("spo2", evalSpo2(rec.data)); }
+    if (rec.type === "hr" && $("hr").textContent === "--") { $("hr").textContent = rec.data; setDot("hr", evalHR(rec.data)); }
+    else if (rec.type === "spo2" && $("spo2").textContent === "--") { $("spo2").textContent = rec.data; setDot("spo2", evalSpo2(rec.data)); }
     else if (rec.type === "bp" && $("bp").textContent === "-- / --") {
       $("bp").textContent = `${rec.data.sys} / ${rec.data.dia}`;
       $("bpHr").textContent = "HR " + rec.data.hr;
-      setEmoji("bp", evalBP(rec.data.sys, rec.data.dia));
-    } else if (rec.type === "hrv" && $("hrv").textContent === "--") { $("hrv").textContent = rec.data; setEmoji("hrv", evalHRV(rec.data)); }
+      setDot("bp", evalBP(rec.data.sys, rec.data.dia));
+    } else if (rec.type === "hrv" && $("hrv").textContent === "--") { $("hrv").textContent = rec.data; setDot("hrv", evalHRV(rec.data)); }
     else if (rec.type === "sleep" && $("sleepMin").textContent === "--") {
       $("sleepMin").textContent = `${Math.floor(rec.data.totalMin / 60)}h${rec.data.totalMin % 60}m`;
       setSleepEmojis(rec.data);
     }
     else if (rec.type === "pressure" && rec.data && $("pressureVal")?.textContent === "--") {
       const last = rec.data[rec.data.length - 1];
-      if (last) { $("pressureVal").textContent = last.pressure; setEmoji("pressure", evalPressure(last.pressure)); }
+      if (last) {
+        $("pressureVal").textContent = last.pressure; setDot("pressure", evalPressure(last.pressure));
+        if ($("fatigueVal")) $("fatigueVal").textContent = last.fatigue || "--";
+        if ($("vo2maxVal")) $("vo2maxVal").textContent = last.vo2max || "--";
+      }
+    }
+    else if (rec.type === "tempHist" && $("tempVal")?.textContent === "--" && Array.isArray(rec.data) && rec.data.length) {
+      const last = rec.data[rec.data.length - 1];
+      $("tempVal").textContent = last.temp.toFixed(1); setDot("temp", evalTemp(last.temp));
     }
     else if (rec.type === "stepsHist" && $("steps").textContent === "--" && Array.isArray(rec.data)) {
       const today = startOfDay(new Date());
       let sum = 0;
       for (const x of rec.data) if (sameDay(new Date(x.t), today)) sum += x.steps;
-      if (sum > 0) { $("steps").textContent = sum; setStepsBadge(sum); }
+      if (sum > 0) { $("steps").textContent = sum; }
     }
   }
 }
