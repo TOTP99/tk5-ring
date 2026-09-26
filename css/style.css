@@ -47,7 +47,6 @@ main{max-width:720px;margin:0 auto}
 }
 .topbar .brand{font-size:15px;letter-spacing:.2px;color:var(--ink);margin-right:auto}
 .brand-tk5{color:var(--accent);font-weight:800;letter-spacing:.5px}
-.brand-ring{font-weight:600;color:var(--ink)}
 .device-tag{
   display:inline-block;font-size:10px;font-weight:700;letter-spacing:1px;
   color:var(--accent);border:1px solid rgba(201,168,106,.4);
@@ -131,8 +130,9 @@ button.glow{border-color:var(--accent)!important}
 .grid3 .m .v{font-size:22px;margin:2px 0}
 .grid3 .m .u{font-size:10px}
 .grid3 .metric-dot{width:8px;height:8px}
-.action-row{margin-bottom:10px}
-.action-row button{flex:1}
+.grid3 .action-cell{display:flex;flex-direction:column;gap:8px;justify-content:center;cursor:default}
+.grid3 .action-cell:active{transform:none}
+.grid3 .action-cell button{flex:1}
 .m{
   border:1px solid var(--line-soft);
   border-radius:var(--r);padding:14px 14px 12px;
