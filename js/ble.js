@@ -47,8 +47,8 @@ function handle(type, p) {
   switch (type) {
     case 0x0200:
       if (p.length === 1 && p[0] >= 0xfb) { log("Device info error 0x" + p[0].toString(16)); break; }
-      // 真电量在回复的 payload[5] (0x64=100%)。2026-09-25 用户 SmartHealth 显示 78%,
-      // 连上后这里应读出 78 才能最终确认该偏移在 52F5 上成立。
+      // 电量在回复的 payload[5] (0-100)。2026-09-26 查到原厂 SDK 文档:
+      // 02 00 必须带 payload 47 43, 空包会被回 0xfe (data error)。offset 仍待原厂值交叉验证。
       if (p.length > 5 && p[5] <= 100) setRingBattery(p[5], "02 00");
       else log("02 00 reply [" + hex(p) + "]");
       break;
@@ -210,8 +210,8 @@ async function connect() {
     await send(0x0201, [0x47, 0x46]);
     await send(0x0100, timePayload());
     await send(0x021b);
-    await send(0x0200);
-    await send(0x0203);
+    await send(0x0200, [0x47, 0x43]); // 原厂 SmartHealth 原样: 空 payload 会被回 0xfe (data error)
+    await send(0x0203, [0x47, 0x50]); // GetDeviceName, 同上需要 payload
     await send(0x020c);
     await send(0x032f, [0x01, 0x00]);
     await send(0x0309, [0x01, 0x00, 0x02, 0xa0]);
