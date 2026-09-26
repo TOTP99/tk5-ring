@@ -45,6 +45,7 @@ if (btnPower) {
   });
 }
 $("btnSteps").onclick = () => send(0x020c);
+$("btnTemp").onclick = () => hist("1e");
 document.querySelectorAll("[data-h]").forEach(b => b.onclick = () => hist(b.dataset.h));
 $("btnCopy").onclick = async () => { try { await navigator.clipboard.writeText(logs.join("\n")); } catch (_) {} };
 $("btnClearLog").onclick = () => { logs = []; $("log").textContent = ""; };
@@ -80,7 +81,7 @@ $("card-hrv").onclick = () => { showPage("pageHRV"); drawHRVChart(); };
 $("card-sleep").onclick = () => { showPage("pageSleep"); drawSleepChart(); drawHypnogram(); };
 $("card-pressure").onclick = () => { showPage("pagePressure"); drawPressureChart(); };
 $("card-steps").onclick = (e) => { if (e.target.closest("#btnSteps")) return; showPage("pageSteps"); drawStepsChart(); };
-$("card-temp").onclick = () => { showPage("pageTemp"); drawTempChart(); };
+$("card-temp").onclick = (e) => { if (e.target.closest("#btnTemp")) return; showPage("pageTemp"); drawTempChart(); };
 
 $("pressureDatePrev").onclick = () => { pressureDate.setDate(pressureDate.getDate() - 1); drawPressureChart(); };
 $("pressureDateNext").onclick = () => { pressureDate.setDate(pressureDate.getDate() + 1); drawPressureChart(); };
