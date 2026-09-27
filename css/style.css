@@ -282,3 +282,25 @@ canvas{width:100%!important;height:100%!important;display:block;min-height:100px
 .date-nav{display:flex;justify-content:center;align-items:center;gap:14px;margin:8px 0}
 .date-nav button{padding:5px 14px}
 .date-nav .dl{font-size:13px;color:var(--ink);font-weight:600;min-width:90px;text-align:center}
+
+/* ── 横屏（iPhone 14 844×390）：竖屏上下 → 横屏左右并列，保留呼吸 ── */
+@media (orientation: landscape) and (min-width:700px){
+  body{padding:max(10px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom))}
+  main{max-width:1020px}
+  /* 仪表盘：左=状态+时钟+九宫格，右=测量/历史面板（两者互斥显示） */
+  #page1{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px 16px;align-items:start}
+  #page1>.topbar{grid-column:1/-1;margin-bottom:0}
+  #page1>.connect-row{grid-column:1}
+  #page1>.clock-strip{grid-column:1;margin-bottom:0}
+  #page1>.grid3{grid-column:1;margin-bottom:0}
+  #page1>#panel-control,#page1>#panel-data{grid-column:2;grid-row:2/span 3}
+  #page1 .card{margin-bottom:0}
+  /* 两面板都收起时，仪表盘占满整宽 */
+  #page1:has(>#panel-control[style*="display"]):has(>#panel-data[style*="display"])>.connect-row,
+  #page1:has(>#panel-control[style*="display"]):has(>#panel-data[style*="display"])>.clock-strip,
+  #page1:has(>#panel-control[style*="display"]):has(>#panel-data[style*="display"])>.grid3{grid-column:1/-1}
+  /* 详情页：图表更宽更高；睡眠页双卡并列 */
+  .chart-box{min-height:190px}
+  #pageSleep{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  #pageSleep .card{margin-bottom:0}
+}
